@@ -1,11 +1,14 @@
 # Production: pull sunshow/linkgear from Docker Hub (no local build).
 #
-#   cp .env.prod.example .env.prod   # set POSTGRES_PASSWORD + LINKGEAR_DSN + LINKGEAR_PUBLIC_URL
-#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#   cp .env.example .env   # set POSTGRES_PASSWORD + LINKGEAR_DSN + LINKGEAR_PUBLIC_URL
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Compose auto-loads `.env` in this directory for ${VAR} interpolation.
+# The linkgear service also mounts the same file via env_file.
 #
 # External Postgres (skip bundled db):
-#   set LINKGEAR_DSN=postgres://… in .env.prod, then:
-#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-deps linkgear
+#   set LINKGEAR_DSN=postgres://… in .env, then:
+#   docker compose -f docker-compose.prod.yml up -d --no-deps linkgear
 #
 # Jenkins pushes: sunshow/linkgear:latest and :<short-sha>-<YYYYMMDD>
 
@@ -15,11 +18,11 @@ services:
     ports:
       - "${LINKGEAR_HOST_PORT:-8080}:8080"
     env_file:
-      - .env.prod
+      - .env
     environment:
       LINKGEAR_HTTP_ADDR: ${LINKGEAR_HTTP_ADDR:-:8080}
       LINKGEAR_PUBLIC_URL: ${LINKGEAR_PUBLIC_URL:-https://linkgear.example.com}
-      LINKGEAR_DSN: ${LINKGEAR_DSN:?set LINKGEAR_DSN in .env.prod}
+      LINKGEAR_DSN: ${LINKGEAR_DSN:?set LINKGEAR_DSN in .env}
       TZ: Asia/Shanghai
     depends_on:
       db:
@@ -36,7 +39,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-linkgear}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-linkgear}
     volumes:
       - linkgear_pg_data:/var/lib/postgresql/data

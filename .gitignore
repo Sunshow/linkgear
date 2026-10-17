@@ -2,11 +2,10 @@
 *.sqlite
 *.sqlite3
 .env
+.env.prod
 /bin/
 /data/
 *.exe
 *.test
 .DS_Store
 /linkgear
-
-.env.prod

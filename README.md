@@ -64,8 +64,8 @@ docker compose up -d --build
 生产（拉取 `sunshow/linkgear:latest`，见 `docker-compose.prod.yml`）：
 
 ```bash
-cp .env.prod.example .env.prod   # 改密码与 LINKGEAR_PUBLIC_URL
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+cp .env.example .env   # 改密码与 LINKGEAR_PUBLIC_URL
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 

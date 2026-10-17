@@ -56,22 +56,24 @@ docker run -d --name linkgear \
 与开发用 `docker-compose.yaml`（本地 build）不同，生产文件**默认拉取** Docker Hub 镜像 `sunshow/linkgear:latest`，不本地构建。风格对齐 agentgear（`restart` + `healthcheck`），并附带 Postgres 与命名卷。
 
 ```bash
-cp .env.prod.example .env.prod
-# 编辑 .env.prod：改 POSTGRES_PASSWORD、LINKGEAR_DSN（密码保持一致）、LINKGEAR_PUBLIC_URL
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
-docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+cp .env.example .env
+# 编辑 .env：改 POSTGRES_PASSWORD、LINKGEAR_DSN（密码保持一致）、LINKGEAR_PUBLIC_URL
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml ps
 curl -fsS http://127.0.0.1:8080/healthz
 ```
 
+Compose 会自动加载同目录下的 `.env` 做变量插值，无需再写 `--env-file`。
+
 - App 默认映射：`${LINKGEAR_HOST_PORT:-8080}:8080`
 - 数据卷：`linkgear_pg_data`（Postgres）
-- 凭据与对外 URL：见 `.env.prod.example`（复制为 `.env.prod`，勿提交）
+- 凭据与对外 URL：见 `.env.example`（复制为 `.env`，勿提交）
 - 镜像标签：`LINKGEAR_IMAGE_TAG`（默认 `latest`；亦可设 Jenkins 打的 `<short-sha>-<YYYYMMDD>`）
 
-**外部 Postgres：** 在 `.env.prod` 写好 `LINKGEAR_DSN=postgres://…`，然后只起应用：
+**外部 Postgres：** 在 `.env` 写好 `LINKGEAR_DSN=postgres://…`，然后只起应用：
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-deps linkgear
+docker compose -f docker-compose.prod.yml up -d --no-deps linkgear
 ```
 
 第一期仍**不使用 Redis**。
