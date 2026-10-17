@@ -61,6 +61,13 @@ docker compose up -d --build
 # docker build -t sunshow/linkgear:latest . && docker run --rm -p 8080:8080 sunshow/linkgear:latest
 ```
 
+
+## CI / Jenkins
+
+仓库根目录 `Jenkinsfile` 对齐 [agentgear `proxy/Jenkinsfile`](https://github.com/Sunshow/agentgear/blob/main/proxy/Jenkinsfile)：Docker Hub 推送 `sunshow/linkgear:latest` 与 `sunshow/linkgear:<short-sha>-<YYYYMMDD>`。
+
+建议 Jenkins 任务名：`pipeline-build-linkgear`（与 `pipeline-build-proxyforge-web` 等同系列命名）。凭据 ID：`dockerhub-sunshow`。
+
 ## Postgres 部署
 
 ```bash

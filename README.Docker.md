@@ -46,3 +46,7 @@ docker run -d --name linkgear \
 
 - 宿主机 `./data` 需可被 UID 1000 写入：`sudo chown -R 1000:1000 ./data`
 - `LINKGEAR_PUBLIC_URL` 必须是 bot 能访问到的地址，否则邀请文案里的 join URL / docs 链接会错
+
+## Jenkins
+
+根目录 `Jenkinsfile` 推送到 Docker Hub：`sunshow/linkgear:latest` 与 `:<git-short>-<YYYYMMDD>`。建议任务名 `pipeline-build-linkgear`。
