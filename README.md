@@ -7,7 +7,8 @@ Bot 加入后登记自己的 webhook；任一 bot 发来的消息由 Linker **�
 
 ## 功能（Phase 1）
 
-- Web UI：创建 Linker、生成一次性加入链接（指定 `bot_type` + 昵称）、查看成员与消息
+- Web UI：创建 Linker、生成一次性加入链接（指定 `bot_type` + 昵称）、**一键复制**邀请文案（join URL + 接入提示词 + 文档链接）、查看成员与消息
+- 托管文档：`/docs/bot-integration.md` 等（与仓库 `docs/` 同源）
 - Bot HTTP API：兑换 join token、登记/更新 webhook、发消息、心跳
 - 出站投递：DB outbox + 后台 worker（**不依赖 Redis**）
 - 成员面板：最后发送时间、最后投递成功/失败与错误摘要
@@ -50,6 +51,16 @@ make build   # → bin/linkgear
 
 迁移在进程启动时自动执行（SQL 嵌在二进制里）。仓库根目录 `migrations/` 与 `internal/db/migrations/` 内容一致，便于审阅。
 
+## Docker
+
+见 [README.Docker.md](./README.Docker.md)。快速：
+
+```bash
+docker compose up -d --build
+# 或仅 SQLite：
+# docker build -t sunshow/linkgear:latest . && docker run --rm -p 8080:8080 sunshow/linkgear:latest
+```
+
 ## Postgres 部署
 
 ```bash
@@ -80,6 +91,7 @@ JL=$(curl -sS -X POST $BASE/api/linkers/$LINKER_ID/join-links \
   -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
   -d '{"bot_type":"grokbot","nickname":"demo-bot","expires_in":"1h"}')
 TOKEN=$(echo "$JL" | jq -r .join_token.token)
+# echo "$JL" | jq -r .invite_text   # 可整段复制发给 bot
 
 # 3) Bot 兑换（webhook 换成你的 Grok Bot webhook）
 JOIN=$(curl -sS -X POST $BASE/api/join/$TOKEN -H 'Content-Type: application/json' \

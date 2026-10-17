@@ -9,7 +9,7 @@
 <body>
 <div class="wrap">
   <header>
-    <p><a href="/">← linkgear</a></p>
+    <p><a href="/">← linkgear</a> · <a href="{{.DocsURL}}" target="_blank" rel="noopener">接入文档</a></p>
     <h1>{{.Linker.Name}}</h1>
     <p class="muted">Linker ID：<span class="mono">{{.Linker.ID}}</span> · 创建于 {{fmtTimeVal .Linker.CreatedAt}}</p>
   </header>
@@ -48,11 +48,26 @@
       </div>
       <button type="submit">生成加入链接</button>
     </form>
+    <p class="muted" style="margin-top:10px">生成后会出现「一键复制」：把加入 URL + 接入提示词整段发给 bot 即可。</p>
+
+    {{range .JoinTokens}}
+    {{if .Highlight}}
+    <div class="invite-panel" id="invite-{{.Token}}">
+      <div class="invite-head">
+        <strong>新加入邀请 · {{.BotType}} / {{.Nickname}}</strong>
+        <button type="button" class="btn copy-btn" data-copy-target="invite-text-{{.Token}}">一键复制</button>
+      </div>
+      <p class="muted" style="margin:8px 0">复制后直接粘贴发给对应 bot；内含加入 URL 与文档链接。</p>
+      <textarea class="invite-text mono" id="invite-text-{{.Token}}" readonly rows="18">{{.InviteText}}</textarea>
+      <p class="copy-status muted" id="copy-status-{{.Token}}" hidden></p>
+    </div>
+    {{end}}
+    {{end}}
 
     {{if .JoinTokens}}
     <table style="margin-top:16px">
       <thead>
-        <tr><th>状态</th><th>类型 / 昵称</th><th>加入 URL</th><th>过期</th></tr>
+        <tr><th>状态</th><th>类型 / 昵称</th><th>加入 URL</th><th>过期</th><th></th></tr>
       </thead>
       <tbody>
         {{range .JoinTokens}}
@@ -61,6 +76,12 @@
           <td>{{.BotType}} / {{.Nickname}}</td>
           <td class="mono">{{.JoinURL}}</td>
           <td>{{fmtTimeVal .ExpiresAt}}</td>
+          <td>
+            {{if .Unused}}
+            <button type="button" class="btn secondary copy-btn" data-copy-target="invite-hidden-{{.Token}}">一键复制</button>
+            <textarea id="invite-hidden-{{.Token}}" class="sr-only" readonly>{{.InviteText}}</textarea>
+            {{else}}—{{end}}
+          </td>
         </tr>
         {{end}}
       </tbody>
@@ -97,7 +118,7 @@
       </tbody>
     </table>
     {{else}}
-    <p class="muted">还没有 bot 加入。生成加入链接后，让 bot POST /api/join/&lt;token&gt; 并带上 webhook_url。</p>
+    <p class="muted">还没有 bot 加入。生成加入链接后，一键复制邀请发给 bot，让它 POST 加入并带上 webhook_url。</p>
     {{end}}
   </div>
 
@@ -121,5 +142,44 @@
     {{end}}
   </div>
 </div>
+<script>
+(function () {
+  function copyText(el) {
+    var text = el.value != null ? el.value : el.textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    el.removeAttribute('readonly');
+    el.focus();
+    el.select();
+    try {
+      document.execCommand('copy');
+      return Promise.resolve();
+    } finally {
+      el.setAttribute('readonly', 'readonly');
+    }
+  }
+  document.querySelectorAll('.copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-copy-target');
+      var el = document.getElementById(id);
+      if (!el) return;
+      copyText(el).then(function () {
+        var prev = btn.textContent;
+        btn.textContent = '已复制';
+        btn.classList.add('copied');
+        setTimeout(function () {
+          btn.textContent = prev;
+          btn.classList.remove('copied');
+        }, 1600);
+      }).catch(function () {
+        btn.textContent = '复制失败';
+      });
+    });
+  });
+  var panel = document.querySelector('.invite-panel');
+  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+})();
+</script>
 </body>
 </html>

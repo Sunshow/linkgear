@@ -84,3 +84,39 @@ th { color: var(--muted); font-weight: 600; }
   border-radius: 8px;
   margin: 8px 0;
 }
+
+.invite-panel {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(61,139,253,.45);
+  background: rgba(61,139,253,.08);
+}
+.invite-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.invite-text {
+  width: 100%;
+  min-height: 220px;
+  margin: 0;
+  resize: vertical;
+  background: #0c1118;
+  border: 1px solid var(--border);
+  color: var(--text);
+  line-height: 1.45;
+}
+button.copied, .btn.copied { background: var(--ok); }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}

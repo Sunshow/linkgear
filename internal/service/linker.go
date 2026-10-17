@@ -82,9 +82,12 @@ func (s *Service) ListMembers(linkerID string) ([]models.Member, error) {
 }
 
 type JoinLinkResult struct {
-	JoinToken models.JoinToken `json:"join_token"`
-	JoinURL   string           `json:"join_url"`
-	JoinPath  string           `json:"join_path"`
+	JoinToken   models.JoinToken `json:"join_token"`
+	JoinURL     string           `json:"join_url"`
+	JoinPath    string           `json:"join_path"`
+	InviteText  string           `json:"invite_text"`
+	DocsURL     string           `json:"docs_url"`
+	RepoDocsURL string           `json:"repo_docs_url"`
 }
 
 func (s *Service) CreateJoinLink(linkerID, botType, nickname string, expiresIn time.Duration) (*JoinLinkResult, error) {
@@ -99,7 +102,8 @@ func (s *Service) CreateJoinLink(linkerID, botType, nickname string, expiresIn t
 	if expiresIn <= 0 {
 		expiresIn = 24 * time.Hour
 	}
-	if _, err := s.GetLinker(linkerID); err != nil {
+	linker, err := s.GetLinker(linkerID)
+	if err != nil {
 		return nil, err
 	}
 	now := time.Now().UTC()
@@ -116,10 +120,14 @@ func (s *Service) CreateJoinLink(linkerID, botType, nickname string, expiresIn t
 		return nil, err
 	}
 	path := "/api/join/" + jt.Token
+	joinURL := s.PublicURL + path
 	return &JoinLinkResult{
-		JoinToken: jt,
-		JoinURL:   s.PublicURL + path,
-		JoinPath:  path,
+		JoinToken:   jt,
+		JoinURL:     joinURL,
+		JoinPath:    path,
+		InviteText:  s.BuildInviteText(linker, &jt, joinURL),
+		DocsURL:     s.PublicURL + "/docs/bot-integration.md",
+		RepoDocsURL: RepoDocsBase + "/bot-integration.md",
 	}, nil
 }
 

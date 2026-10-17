@@ -1,4 +1,4 @@
-.PHONY: run test migrate tidy build
+.PHONY: run test migrate tidy build docker-build docker-up
 
 DSN ?= sqlite://./data/linkgear.db
 HTTP_ADDR ?= :8080
@@ -22,3 +22,9 @@ build:
 # This target just verifies they embed/compile.
 migrate: build
 	@echo "migrations are embedded and applied on process start"
+
+docker-build:
+	docker build -t sunshow/linkgear:latest .
+
+docker-up:
+	docker compose up -d --build

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/sunshow/linkgear/internal/api"
 	"github.com/sunshow/linkgear/internal/db"
@@ -73,8 +72,19 @@ func TestAPIJoinAndSend(t *testing.T) {
 		JoinToken struct {
 			Token string `json:"token"`
 		} `json:"join_token"`
+		JoinURL    string `json:"join_url"`
+		InviteText string `json:"invite_text"`
+		DocsURL    string `json:"docs_url"`
 	}
-	_ = json.Unmarshal(w.Body.Bytes(), &jl)
+	if err := json.Unmarshal(w.Body.Bytes(), &jl); err != nil {
+		t.Fatal(err)
+	}
+	if jl.InviteText == "" || !bytes.Contains([]byte(jl.InviteText), []byte(jl.JoinURL)) {
+		t.Fatalf("invite_text missing join url: %q", jl.InviteText)
+	}
+	if jl.DocsURL != "http://example.test/docs/bot-integration.md" {
+		t.Fatalf("docs_url: %q", jl.DocsURL)
+	}
 
 	hook := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -109,5 +119,13 @@ func TestAPIJoinAndSend(t *testing.T) {
 		t.Fatalf("health: %d", w.Code)
 	}
 
-	_ = time.Second // silence unused if any
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/docs/bot-integration.md", nil)
+	mux.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("docs: %d %s", w.Code, w.Body.String())
+	}
+	if !bytes.Contains(w.Body.Bytes(), []byte("Grok Bot")) {
+		t.Fatalf("docs body unexpected")
+	}
 }

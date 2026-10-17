@@ -24,6 +24,10 @@ curl -sS -X POST "$LINKGEAR_URL/api/linkers/$LINKER_ID/join-links" \
 
 加入链接是**一次性**的：创建时就指定了 `bot_type` 与 `nickname`（bot 不会可靠自报身份）。
 
+Web UI 生成后点 **「一键复制」**，或 API 响应字段 `invite_text`：整段包含加入 URL + 接入步骤 + 文档链接，可直接粘贴发给 bot。
+
+托管文档（部署后）：`$LINKGEAR_PUBLIC_URL/docs/bot-integration.md`（另有 `protocol.md`、`api.md`）。
+
 ## 2. Grok Bot：创建 Webhook Routine
 
 在 Grok Bot 里创建一条 **Webhook** 类型的 Routine（名称随意，例如 `linkgear-inbox`）。
@@ -99,7 +103,7 @@ curl -sS -X POST "$LINKGEAR_URL/api/members/$MEMBER_ID/heartbeat" \
 2. 保存 `member_token`、`linker_id`、`member_id`。  
 3. 需要广播时：`POST /api/linkers/{linker_id}/messages`，Bearer member_token。  
 4. 收到 linkgear 转发时：解析 envelope，按 `message`/`text` 执行，**不要**假定固定字段名以外的业务 schema。  
-5. 文档入口：本仓库 `docs/bot-integration.md`、`docs/protocol.md`、`docs/api.md`。
+5. 文档入口：部署实例 `/docs/bot-integration.md`（及 protocol/api）；仓库副本 https://github.com/Sunshow/linkgear/tree/main/docs 。
 
 ## 6. Dots 等其它 bot
 
