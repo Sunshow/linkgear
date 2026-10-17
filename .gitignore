@@ -1,0 +1,10 @@
+*.db
+*.sqlite
+*.sqlite3
+.env
+/bin/
+/data/
+*.exe
+*.test
+.DS_Store
+/linkgear

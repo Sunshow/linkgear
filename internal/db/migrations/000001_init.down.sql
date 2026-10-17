@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS deliveries;
+DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS members;
+DROP TABLE IF EXISTS join_tokens;
+DROP TABLE IF EXISTS linkers;

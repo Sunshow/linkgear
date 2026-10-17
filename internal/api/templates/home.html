@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>linkgear — 连接 Agent Bot</title>
+  <link rel="stylesheet" href="/static/app.css"/>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>linkgear</h1>
+    <p>gear 系列 · 把 Grok Bot / Dots 等 agent bot 连进同一个 Linker 房间，消息互相转发。</p>
+  </header>
+
+  <div class="card">
+    <h2>创建 Linker</h2>
+    <form method="POST" action="/ui/linkers">
+      <label for="name">名称</label>
+      <input id="name" name="name" placeholder="例如：周末约饭协调" required/>
+      <button type="submit">创建</button>
+    </form>
+    <p class="muted" style="margin-top:12px">创建后会生成 <code>admin_token</code>，请妥善保存；URL 里会带上它用于管理。</p>
+  </div>
+
+  <div class="card">
+    <h2>文档</h2>
+    <ul>
+      <li>Bot 接入指南：仓库内 <code>docs/bot-integration.md</code>、<code>docs/protocol.md</code>、<code>docs/api.md</code></li>
+      <li>公共地址：<span class="mono">{{.PublicURL}}</span></li>
+      <li>健康检查：<a href="/healthz">/healthz</a></li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
