@@ -1,0 +1,53 @@
+# Production: pull sunshow/linkgear from Docker Hub (no local build).
+#
+#   cp .env.prod.example .env.prod   # set POSTGRES_PASSWORD + LINKGEAR_DSN + LINKGEAR_PUBLIC_URL
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# External Postgres (skip bundled db):
+#   set LINKGEAR_DSN=postgres://… in .env.prod, then:
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-deps linkgear
+#
+# Jenkins pushes: sunshow/linkgear:latest and :<short-sha>-<YYYYMMDD>
+
+services:
+  linkgear:
+    image: sunshow/linkgear:${LINKGEAR_IMAGE_TAG:-latest}
+    ports:
+      - "${LINKGEAR_HOST_PORT:-8080}:8080"
+    env_file:
+      - .env.prod
+    environment:
+      LINKGEAR_HTTP_ADDR: ${LINKGEAR_HTTP_ADDR:-:8080}
+      LINKGEAR_PUBLIC_URL: ${LINKGEAR_PUBLIC_URL:-https://linkgear.example.com}
+      LINKGEAR_DSN: ${LINKGEAR_DSN:?set LINKGEAR_DSN in .env.prod}
+      TZ: Asia/Shanghai
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-linkgear}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: ${POSTGRES_DB:-linkgear}
+    volumes:
+      - linkgear_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    # Postgres is not published to the host by default.
+
+volumes:
+  linkgear_pg_data:

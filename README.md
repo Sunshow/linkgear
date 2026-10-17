@@ -53,12 +53,19 @@ make build   # → bin/linkgear
 
 ## Docker
 
-见 [README.Docker.md](./README.Docker.md)。快速：
+见 [README.Docker.md](./README.Docker.md)。
+
+开发（本地 build + Postgres）：
 
 ```bash
 docker compose up -d --build
-# 或仅 SQLite：
-# docker build -t sunshow/linkgear:latest . && docker run --rm -p 8080:8080 sunshow/linkgear:latest
+```
+
+生产（拉取 `sunshow/linkgear:latest`，见 `docker-compose.prod.yml`）：
+
+```bash
+cp .env.prod.example .env.prod   # 改密码与 LINKGEAR_PUBLIC_URL
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
 
