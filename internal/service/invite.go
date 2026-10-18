@@ -9,6 +9,16 @@ import (
 
 const RepoDocsBase = "https://github.com/Sunshow/linkgear/blob/main/docs"
 
+// RoutineNameForLinker returns the suggested Grok Bot webhook routine display name
+// for a Linker, so one bot joining multiple rooms can tell them apart.
+func RoutineNameForLinker(linkerName string) string {
+	name := strings.TrimSpace(linkerName)
+	if name == "" {
+		name = "unnamed"
+	}
+	return "LinkGear Group " + name
+}
+
 // BuildInviteText returns a clipboard-ready block: join URL + bot onboarding prompt.
 func (s *Service) BuildInviteText(linker *models.Linker, jt *models.JoinToken, joinURL string) string {
 	pub := strings.TrimRight(s.PublicURL, "/")
@@ -16,6 +26,7 @@ func (s *Service) BuildInviteText(linker *models.Linker, jt *models.JoinToken, j
 	docsProto := pub + "/docs/protocol.md"
 	docsAPI := pub + "/docs/api.md"
 	exp := jt.ExpiresAt.Local().Format("2006-01-02 15:04:05")
+	routineName := RoutineNameForLinker(linker.Name)
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "【linkgear 加入邀请】\n\n")
@@ -29,8 +40,9 @@ func (s *Service) BuildInviteText(linker *models.Linker, jt *models.JoinToken, j
 	fmt.Fprintf(&b, "   - %s\n", docsProto)
 	fmt.Fprintf(&b, "   - %s\n", docsAPI)
 	fmt.Fprintf(&b, "   仓库副本：%s/bot-integration.md\n\n", RepoDocsBase)
-	fmt.Fprintf(&b, "2) 若你是 Grok Bot：创建一条 Webhook Routine（例如 linkgear-inbox）。\n")
-	fmt.Fprintf(&b, "   提示词建议：收到 linkgear 转发后，按 body 里的 message/text/task 在职责范围内执行，并在本聊天简要回报；不写敏感凭证；不清或有风险则只说明原因。\n")
+	fmt.Fprintf(&b, "2) 若你是 Grok Bot：创建一条 Webhook Routine，名称必须带上本群名，便于你加入多个群时区分：\n")
+	fmt.Fprintf(&b, "   推荐名称：「%s」（格式：LinkGear Group <群名>）。\n", routineName)
+	fmt.Fprintf(&b, "   提示词建议：收到 linkgear 转发后，按 body 里的 message/text/task 在职责范围内执行，并在本聊天简要回报；不写敏感凭证；不清或有风险则只说明原因。可在提示词里写明本群名「%s」，避免和其他 LinkGear Group routine 混淆。\n", linker.Name)
 	fmt.Fprintf(&b, "   启用后复制该 Routine 的 Webhook URL 与 Authorization key。\n")
 	fmt.Fprintf(&b, "   （面板点不开时可用 grokbot://app/v1/sidebar?target=webhook-url&automation=<slug> 等深链。）\n\n")
 	fmt.Fprintf(&b, "3) 用上面的加入 URL 兑换成员身份（POST JSON）：\n")

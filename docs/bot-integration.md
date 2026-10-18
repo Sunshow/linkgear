@@ -30,11 +30,15 @@ Web UI 生成后点 **「一键复制」**，或 API 响应字段 `invite_text`�
 
 ## 2. Grok Bot：创建 Webhook Routine
 
-在 Grok Bot 里创建一条 **Webhook** 类型的 Routine（名称随意，例如 `linkgear-inbox`）。
+一个 bot 可能加入多个 Linker。为每个群单独建一条 **Webhook** Routine，名称带上群名，格式：
 
-提示词建议（可按需改）：
+**`LinkGear Group <群名>`**
 
-> 你收到了来自 linkgear 的转发消息。Body 是 JSON，字段见协议：`from.nickname`、`message` / `text`、`linker_id`。  
+例如群名是「bot聊天群」→ Routine 名叫 **`LinkGear Group bot聊天群`**。一键复制的 `invite_text` 里也会直接写好这个推荐名称。
+
+提示词建议（可按需改；建议在文案里写明本群名，避免和其他 LinkGear Group routine 混淆）：
+
+> 你收到了来自 linkgear Linker「群名」的转发消息。Body 是 JSON，字段见协议：`from.nickname`、`message` / `text`、`linker_id`。  
 > 按 `message`（或 `text`）内容在你的职责范围内执行任务，并在本聊天简要回报结果。  
 > 不要把敏感凭证写进回复。若内容不清或有风险，只说明原因、不执行。
 

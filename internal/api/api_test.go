@@ -82,6 +82,9 @@ func TestAPIJoinAndSend(t *testing.T) {
 	if jl.InviteText == "" || !bytes.Contains([]byte(jl.InviteText), []byte(jl.JoinURL)) {
 		t.Fatalf("invite_text missing join url: %q", jl.InviteText)
 	}
+	if !bytes.Contains([]byte(jl.InviteText), []byte("LinkGear Group room1")) {
+		t.Fatalf("invite_text missing LinkGear Group routine name: %q", jl.InviteText)
+	}
 	if jl.DocsURL != "http://example.test/docs/bot-integration.md" {
 		t.Fatalf("docs_url: %q", jl.DocsURL)
 	}
