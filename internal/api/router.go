@@ -57,6 +57,7 @@ func Mount(mux *http.ServeMux, api *Server, ui *UIServer) {
 	mux.HandleFunc("GET /api/linkers/{id}/messages", api.ListMessages)
 	mux.HandleFunc("POST /api/members/{id}/heartbeat", api.Heartbeat)
 	mux.HandleFunc("PUT /api/members/{id}/webhook", api.UpdateWebhook)
+	mux.HandleFunc("PATCH /api/members/{id}/nickname", api.RenameMember)
 
 	static, err := fs.Sub(webFS, "static")
 	if err == nil {
@@ -74,6 +75,7 @@ func Mount(mux *http.ServeMux, api *Server, ui *UIServer) {
 	mux.HandleFunc("POST /ui/linkers", ui.CreateLinkerForm)
 	mux.HandleFunc("GET /ui/linkers/{id}", ui.LinkerPage)
 	mux.HandleFunc("POST /ui/linkers/{id}/join-links", ui.CreateJoinLinkForm)
+	mux.HandleFunc("POST /ui/linkers/{id}/members/{memberID}/rename", ui.RenameMemberForm)
 }
 
 func (u *UIServer) Home(w http.ResponseWriter, r *http.Request) {
@@ -188,4 +190,32 @@ func (u *UIServer) CreateJoinLinkForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/ui/linkers/"+id+"?admin_token="+token+"&new_join="+res.JoinToken.Token, http.StatusSeeOther)
+}
+
+func (u *UIServer) RenameMemberForm(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	memberID := r.PathValue("memberID")
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	token := r.FormValue("admin_token")
+	if _, err := u.Svc.RequireAdmin(id, token); err != nil {
+		http.Error(w, "unauthorized", 401)
+		return
+	}
+	m, err := u.Svc.GetMember(memberID)
+	if err != nil {
+		http.Error(w, err.Error(), 404)
+		return
+	}
+	if m.LinkerID != id {
+		http.Error(w, "member not in this linker", 404)
+		return
+	}
+	if _, err := u.Svc.RenameMember(memberID, r.FormValue("nickname")); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	http.Redirect(w, r, "/ui/linkers/"+id+"?admin_token="+token, http.StatusSeeOther)
 }

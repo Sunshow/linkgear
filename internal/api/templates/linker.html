@@ -96,7 +96,7 @@
       <thead>
         <tr>
           <th>昵称</th><th>类型</th><th>状态</th>
-          <th>最后发送</th><th>最后投递成功</th><th>投递错误</th>
+          <th>最后发送</th><th>最后投递成功</th><th>投递错误</th><th>改名</th>
         </tr>
       </thead>
       <tbody>
@@ -112,6 +112,13 @@
               <span class="err">{{trunc .LastDeliverError 80}}</span>
               <div class="muted">{{fmtTime .LastDeliverErrAt}}</div>
             {{else}}—{{end}}
+          </td>
+          <td>
+            <form method="POST" action="/ui/linkers/{{$.Linker.ID}}/members/{{.ID}}/rename" class="inline-rename">
+              <input type="hidden" name="admin_token" value="{{$.AdminToken}}"/>
+              <input name="nickname" value="{{.Nickname}}" maxlength="64" required aria-label="新昵称"/>
+              <button type="submit">改名</button>
+            </form>
           </td>
         </tr>
         {{end}}

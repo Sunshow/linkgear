@@ -213,3 +213,37 @@ func (s *Server) UpdateWebhook(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "service": "linkgear"})
 }
+
+func (s *Server) RenameMember(w http.ResponseWriter, r *http.Request) {
+	mid := r.PathValue("id")
+	var req struct {
+		Nickname string `json:"nickname"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
+		return
+	}
+	m, err := s.Svc.GetMember(mid)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	authorized := false
+	if _, err := s.Svc.RequireAdmin(m.LinkerID, adminToken(r)); err == nil {
+		authorized = true
+	} else if tok := bearer(r); tok != "" {
+		if self, err := s.Svc.MemberByToken(tok); err == nil && self.ID == mid {
+			authorized = true
+		}
+	}
+	if !authorized {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+	updated, err := s.Svc.RenameMember(mid, req.Nickname)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}

@@ -132,3 +132,143 @@ func TestAPIJoinAndSend(t *testing.T) {
 		t.Fatalf("docs body unexpected")
 	}
 }
+
+func TestRenameMemberAdminAndSelf(t *testing.T) {
+	mux, _ := testMux(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/linkers", bytes.NewBufferString(`{"name":"rename-room"}`))
+	mux.ServeHTTP(w, req)
+	if w.Code != 201 {
+		t.Fatalf("create: %d %s", w.Code, w.Body.String())
+	}
+	var created struct {
+		Linker     struct{ ID string `json:"id"` } `json:"linker"`
+		AdminToken string                         `json:"admin_token"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+
+	w = httptest.NewRecorder()
+	body := `{"bot_type":"grokbot","nickname":"Alice","expires_in":"1h"}`
+	req = httptest.NewRequest(http.MethodPost, "/api/linkers/"+created.Linker.ID+"/join-links", bytes.NewBufferString(body))
+	req.Header.Set("Authorization", "Bearer "+created.AdminToken)
+	mux.ServeHTTP(w, req)
+	if w.Code != 201 {
+		t.Fatalf("join-links: %d %s", w.Code, w.Body.String())
+	}
+	var jl struct {
+		JoinToken struct {
+			Token string `json:"token"`
+		} `json:"join_token"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &jl)
+
+	hook := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}))
+	defer hook.Close()
+
+	w = httptest.NewRecorder()
+	joinBody, _ := json.Marshal(map[string]string{"webhook_url": hook.URL})
+	req = httptest.NewRequest(http.MethodPost, "/api/join/"+jl.JoinToken.Token, bytes.NewReader(joinBody))
+	mux.ServeHTTP(w, req)
+	if w.Code != 201 {
+		t.Fatalf("join: %d %s", w.Code, w.Body.String())
+	}
+	var joined struct {
+		MemberToken string `json:"member_token"`
+		Member      struct {
+			ID       string `json:"id"`
+			Nickname string `json:"nickname"`
+		} `json:"member"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &joined); err != nil {
+		t.Fatal(err)
+	}
+
+	// admin rename
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPatch, "/api/members/"+joined.Member.ID+"/nickname",
+		bytes.NewBufferString(`{"nickname":"AdminRenamed"}`))
+	req.Header.Set("Authorization", "Bearer "+created.AdminToken)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("admin rename: %d %s", w.Code, w.Body.String())
+	}
+	var renamed struct {
+		Nickname string `json:"nickname"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &renamed)
+	if renamed.Nickname != "AdminRenamed" {
+		t.Fatalf("admin rename nickname=%q", renamed.Nickname)
+	}
+
+	// self rename
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPatch, "/api/members/"+joined.Member.ID+"/nickname",
+		bytes.NewBufferString(`{"nickname":"SelfRenamed"}`))
+	req.Header.Set("Authorization", "Bearer "+joined.MemberToken)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("self rename: %d %s", w.Code, w.Body.String())
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &renamed)
+	if renamed.Nickname != "SelfRenamed" {
+		t.Fatalf("self rename nickname=%q", renamed.Nickname)
+	}
+
+	// wrong token
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPatch, "/api/members/"+joined.Member.ID+"/nickname",
+		bytes.NewBufferString(`{"nickname":"Nope"}`))
+	req.Header.Set("Authorization", "Bearer wrong-token")
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(w, req)
+	if w.Code != 401 {
+		t.Fatalf("want 401, got %d %s", w.Code, w.Body.String())
+	}
+
+	// empty nickname
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPatch, "/api/members/"+joined.Member.ID+"/nickname",
+		bytes.NewBufferString(`{"nickname":"  "}`))
+	req.Header.Set("Authorization", "Bearer "+joined.MemberToken)
+	req.Header.Set("Content-Type", "application/json")
+	mux.ServeHTTP(w, req)
+	if w.Code != 400 {
+		t.Fatalf("want 400 empty, got %d %s", w.Code, w.Body.String())
+	}
+
+	// UI rename form
+	w = httptest.NewRecorder()
+	form := "admin_token=" + created.AdminToken + "&nickname=UIRenamed"
+	req = httptest.NewRequest(http.MethodPost, "/ui/linkers/"+created.Linker.ID+"/members/"+joined.Member.ID+"/rename",
+		bytes.NewBufferString(form))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	mux.ServeHTTP(w, req)
+	if w.Code != 303 {
+		t.Fatalf("ui rename: %d %s", w.Code, w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/linkers/"+created.Linker.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+created.AdminToken)
+	mux.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("get linker: %d %s", w.Code, w.Body.String())
+	}
+	var detail struct {
+		Members []struct {
+			ID       string `json:"id"`
+			Nickname string `json:"nickname"`
+		} `json:"members"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &detail)
+	if len(detail.Members) != 1 || detail.Members[0].Nickname != "UIRenamed" {
+		t.Fatalf("after ui rename: %+v", detail.Members)
+	}
+}

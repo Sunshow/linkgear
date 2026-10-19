@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/sunshow/linkgear/internal/models"
 	"gorm.io/gorm"
@@ -18,6 +19,20 @@ var (
 	ErrTokenExpired   = errors.New("join token expired")
 	ErrInvalidBotType = errors.New("invalid bot_type")
 )
+
+// MaxNicknameLen is the max rune length for member / join nicknames.
+const MaxNicknameLen = 64
+
+func normalizeNickname(nickname string) (string, error) {
+	nickname = strings.TrimSpace(nickname)
+	if nickname == "" {
+		return "", fmt.Errorf("%w: nickname required", ErrBadRequest)
+	}
+	if utf8.RuneCountInString(nickname) > MaxNicknameLen {
+		return "", fmt.Errorf("%w: nickname too long (max %d)", ErrBadRequest, MaxNicknameLen)
+	}
+	return nickname, nil
+}
 
 type Service struct {
 	DB        *gorm.DB
@@ -92,12 +107,12 @@ type JoinLinkResult struct {
 
 func (s *Service) CreateJoinLink(linkerID, botType, nickname string, expiresIn time.Duration) (*JoinLinkResult, error) {
 	botType = strings.ToLower(strings.TrimSpace(botType))
-	nickname = strings.TrimSpace(nickname)
 	if !models.ValidBotType(botType) {
 		return nil, ErrInvalidBotType
 	}
-	if nickname == "" {
-		return nil, fmt.Errorf("%w: nickname required", ErrBadRequest)
+	nickname, err := normalizeNickname(nickname)
+	if err != nil {
+		return nil, err
 	}
 	if expiresIn <= 0 {
 		expiresIn = 24 * time.Hour
@@ -265,4 +280,32 @@ func (s *Service) ListJoinTokens(linkerID string) ([]models.JoinToken, error) {
 		return nil, err
 	}
 	return list, nil
+}
+
+func (s *Service) GetMember(id string) (*models.Member, error) {
+	var m models.Member
+	if err := s.DB.First(&m, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &m, nil
+}
+
+// RenameMember updates a member's nickname. Caller must authorize (admin of linker or the member themselves).
+func (s *Service) RenameMember(memberID, newNickname string) (*models.Member, error) {
+	nickname, err := normalizeNickname(newNickname)
+	if err != nil {
+		return nil, err
+	}
+	m, err := s.GetMember(memberID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.DB.Model(m).Update("nickname", nickname).Error; err != nil {
+		return nil, err
+	}
+	m.Nickname = nickname
+	return m, nil
 }

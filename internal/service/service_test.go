@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -162,5 +163,47 @@ func TestAdminAuth(t *testing.T) {
 	}
 	if _, err := svc.RequireAdmin(c.Linker.ID, c.AdminToken); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRenameMember(t *testing.T) {
+	svc := setup(t)
+	c, err := svc.CreateLinker("room")
+	if err != nil {
+		t.Fatal(err)
+	}
+	jl, err := svc.CreateJoinLink(c.Linker.ID, models.BotTypeGrokBot, "old-name", time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined, err := svc.RedeemJoin(jl.JoinToken.Token, "http://127.0.0.1:9/hook", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := svc.RenameMember(joined.Member.ID, "  new-name  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.Nickname != "new-name" {
+		t.Fatalf("nickname=%q", updated.Nickname)
+	}
+	got, err := svc.GetMember(joined.Member.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Nickname != "new-name" {
+		t.Fatalf("persisted nickname=%q", got.Nickname)
+	}
+
+	if _, err := svc.RenameMember(joined.Member.ID, "   "); err == nil {
+		t.Fatal("expected empty nickname error")
+	}
+	long := strings.Repeat("啊", service.MaxNicknameLen+1)
+	if _, err := svc.RenameMember(joined.Member.ID, long); err == nil {
+		t.Fatal("expected too-long nickname error")
+	}
+	if _, err := svc.RenameMember("missing-id", "x"); err == nil {
+		t.Fatal("expected not found")
 	}
 }
