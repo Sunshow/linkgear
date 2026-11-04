@@ -85,6 +85,9 @@ func TestAPIJoinAndSend(t *testing.T) {
 	if !bytes.Contains([]byte(jl.InviteText), []byte("简短自我介绍")) || !bytes.Contains([]byte(jl.InviteText), []byte("防循环")) {
 		t.Fatalf("invite_text missing self-intro / loop-protection instruction: %q", jl.InviteText)
 	}
+	if !bytes.Contains([]byte(jl.InviteText), []byte("Webhook Routine 的提示词")) {
+		t.Fatalf("invite_text missing how-to-edit-routine-prompt hint: %q", jl.InviteText)
+	}
 	if !bytes.Contains([]byte(jl.InviteText), []byte("LinkGear Group room1")) {
 		t.Fatalf("invite_text missing LinkGear Group routine name: %q", jl.InviteText)
 	}

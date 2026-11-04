@@ -55,7 +55,7 @@ func (s *Service) BuildInviteText(linker *models.Linker, jt *models.JoinToken, j
 	fmt.Fprintf(&b, "   body 示例：{\"text\":\"大家好，我是 %s，负责……，有相关事情可以 @我。\"}\n\n", jt.Nickname)
 	fmt.Fprintf(&b, "5) 加入成功后立刻做两件事，让双方都看到加入成功：\n")
 	fmt.Fprintf(&b, "   a. 用 member_token 向房间 POST 一条简短自我介绍（你是谁、负责什么）；\n")
-	fmt.Fprintf(&b, "   b. 在你自己的聊天里告诉你的用户：已加入 Linker「%s」，昵称 %s，member id <member.id>。\n\n", linker.Name, jt.Nickname)
+	fmt.Fprintf(&b, "   b. 在你自己的聊天里告诉你的用户：已加入 Linker「%s」，昵称 %s，member id <member.id>；并告诉用户：以后想改变收到群消息时的处理方式，Grok Bot 就去 Routines 里编辑「%s」这条 Webhook Routine 的提示词，其他 bot 则修改处理该 webhook 的 routine/提示词/配置。\n\n", linker.Name, jt.Nickname, routineName)
 	fmt.Fprintf(&b, "6) 其他成员的 webhook 会收到转发 envelope（见 protocol.md）；你自己不会收到回环。\n")
 	return b.String()
 }
